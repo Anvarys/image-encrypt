@@ -2,16 +2,16 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { encode } from "./encoding";
+import { canvas2file, encode_file } from "./encoding";
 
 
 export function App() {
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageFileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasContext, setCanvasContext] = useState<CanvasRenderingContext2D | null>(null);
   const [isImageUploaded, setIsImageUploaded] = useState<boolean>(false)
+  const [filename, setFilename] = useState<string | null>(null)
 
   async function imageFileInputChange() {
       const file = imageFileInputRef.current?.files?.[0]
@@ -33,10 +33,18 @@ export function App() {
   }
 
   function fileInputChange() {
-
+    const file = fileInputRef.current?.files?.[0]
+    if (!file) return;
+    if (file.name.length > 255) {
+      fileInputRef.current!.value = "";
+      toast.error("Your file's name is longer than 255 characters", {duration: 8000});
+      setFilename(null);
+      return;
+    }
+    setFilename(file.name)
   }
 
-  function encodeButtonClicked() {
+  async function encodeButtonClicked() {
     if (!isImageUploaded) {
       toast.error("Please upload an image first", {duration: 8000});
       return;
@@ -51,7 +59,27 @@ export function App() {
     
     if (!canvasRef.current) return;
 
-    encode(canvasRef.current, file, 1)
+    await encode_file(canvasRef.current, file, 1)
+  }
+
+  async function decodeButtonClicked() {
+    if (!isImageUploaded) {
+      toast.error("Please upload an image first", {duration: 8000});
+      return;
+    }
+
+    const file = await canvas2file(canvasRef.current!)
+
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+
+    anchor.href = url;
+    anchor.download = file.name;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+
+    URL.revokeObjectURL(url);
   }
 
   useEffect(() => {
@@ -79,10 +107,14 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
     <Label className="text-center hover:underline cursor-pointer text-muted-foreground">or choose from examples</Label>
     </div>
   </Button>
+  
+  <canvas ref={canvasRef} className="max-w-2xl max-h-2xl w-2xl h-2xl border border-4"/>
+  {filename && <Label>File: {filename}</Label>}
 
-  <canvas ref={canvasRef} className="w-auto h-auto border border-4 max-h-2xl max-w-2xl"/>
-
-  <Button className="cursor-pointer text-foreground p-6 text-[1.2rem]" onClick={encodeButtonClicked}>Encode the file inside the image</Button>
+  <div className="flex flex-row gap-4">
+    <Button className="cursor-pointer text-foreground p-6 text-[1.2rem] border-blue-600 bg-blue-500" onClick={encodeButtonClicked}>Encode</Button>
+    <Button className="cursor-pointer text-foreground p-6 text-[1.2rem]" onClick={decodeButtonClicked}>Decode</Button>
+  </div>
 </div>);
 }
 
