@@ -17,7 +17,6 @@ export async function encode_file(canvas: HTMLCanvasElement, file: File, color_b
   const sizes_bytes_dv = new DataView(sizes_bytes.buffer);
 
   sizes_bytes_dv.setUint32(0, file.size);
-  console.log(file.size)
   sizes_bytes_dv.setUint8(4, file.name.length);
   sizes_bytes_dv.setUint8(5, file.type.length);
 
@@ -53,14 +52,9 @@ async function encode_bytes(canvas: HTMLCanvasElement, bytes: Uint8Array, color_
       for (let color = 0; color < 3; color++) {
         data[pixel * pixel_data_count + color] = data[pixel * pixel_data_count + color] & color_bits_to_remove;
 
-        console.log(data[pixel * pixel_data_count + color].toString(2).padStart(8, "0"))
-
         for (let bit = 0; bit < color_bits_used; bit++) {
           data[pixel * pixel_data_count + color] += ( ( bytes[(total_bits+bit) >> 3] >> (7 - (total_bits+bit) & 7) ) & 1 ) << (color_bits_used - bit - 1);
-          console.log(( bytes[(total_bits+bit) >> 3] >> (7 - (total_bits+bit) & 7) ) & 1)
         }
-
-        console.log(data[pixel * pixel_data_count + color].toString(2).padStart(8, "0"))
 
         total_bits += color_bits_used
       }
@@ -103,7 +97,6 @@ async function decode_part(data: Uint8ClampedArray, byte_count: number, color_bi
 
     if (pixel > total_pixel_count) {
       toast.error("An error occured during decoding")
-      console.log(pixel, total_bits, byte_count)
       throw "not enough pixels"
     }
   }
@@ -123,7 +116,6 @@ export async function canvas2file(canvas: HTMLCanvasElement, color_bits_used: nu
 
   const sizes_dv = new DataView(sizes.buffer);
   const file_size = sizes_dv.getUint32(0);
-  console.log(file_size)
   const file_name_size = sizes_dv.getUint8(4);
   const file_type_size = sizes_dv.getUint8(5);
 

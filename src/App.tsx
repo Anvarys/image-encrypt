@@ -15,7 +15,9 @@ export function App() {
   const [isImageUploaded, setIsImageUploaded] = useState<boolean>(false)
   const [filename, setFilename] = useState<string | null>(null)
   const [imagesSampleDialogOpen, setImagesSampleDialogOpen] = useState<boolean>(false);
-  const [fileSampleDialogOpen, setFileSampleDialogOpen] = useState<boolean>(false)
+  const [fileSampleDialogOpen, setFileSampleDialogOpen] = useState<boolean>(false);
+  const [fileSampleSelected, setFileSampleSelected] = useState<File | null>(null);
+  const [imageSampleFilename, setImageSampleFilename] = useState<string | null>(null);
 
   const color_bits_used = 1
 
@@ -42,7 +44,7 @@ export function App() {
     setIsImageUploaded(true)
   }
 
-  async function onImageSampleClick(e: React.MouseEvent<HTMLImageElement, MouseEvent>) {
+  async function onImageSampleClick(e: React.MouseEvent<HTMLImageElement, MouseEvent>, filename: string) {
     const imgElement = e.currentTarget;
     if (!canvasRef.current || !canvasContext) return;
 
@@ -52,6 +54,7 @@ export function App() {
 
     setImagesSampleDialogOpen(false)
     setIsImageUploaded(true)
+    setImageSampleFilename(filename)
   }
 
   function fileInputChange() {
@@ -64,6 +67,7 @@ export function App() {
       return;
     }
     setFilename(file.name)
+    setFileSampleSelected(null)
   }
 
   async function encodeButtonClicked() {
@@ -74,14 +78,14 @@ export function App() {
 
     const file = fileInputRef.current?.files?.[0]
 
-    if (!file) {
+    if (!(file || fileSampleSelected)) {
       toast.error("Please upload a file first", {duration: 8000});
       return;
     }
     
     if (!canvasRef.current) return;
 
-    const result = await encode_file(canvasRef.current, file, color_bits_used)
+    const result = await encode_file(canvasRef.current, (file || fileSampleSelected)!, color_bits_used)
 
     if (!result) {return;}
 
@@ -89,7 +93,10 @@ export function App() {
     const anchor = document.createElement("a");
 
     anchor.href = url;
-    anchor.download = imageFileInputRef.current?.files?.[0]!.name!;
+    if (imageFileInputRef.current?.files?.[0])
+    anchor.download = imageFileInputRef.current?.files?.[0]!.name! ;
+    else
+    anchor.download = imageSampleFilename!
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -117,8 +124,20 @@ export function App() {
     URL.revokeObjectURL(url);
   }
 
-  async function fileSampleClicked(url: string) {
-    
+  async function setFileFromUrl(url: string, filename: string) {
+    const response = await fetch(url);
+    const blob = await response.blob()
+
+
+    const file = new File([blob], filename, {
+      type: response.headers.get("content-type")!,
+      lastModified: Date.now(),
+    });
+
+    fileInputRef.current!.files
+    setFilename(filename)
+    setFileSampleSelected(file)
+    setFileSampleDialogOpen(false)
   }
 
   useEffect(() => {
@@ -166,31 +185,33 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
   <Dialog open={imagesSampleDialogOpen} onOpenChange={setImagesSampleDialogOpen}>
   <DialogContent className="min-w-[80%] max-w-[80%] min-h-[80%] max-h-[80%] bg-neutral-900 border-neutral-800 overflow-auto">
     <div className="flex flex-wrap gap-10 justify-start items-start content-start">
-    <img src="samples/images/banana_big.png" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={onImageSampleClick}/>
-    <img src="samples/images/cat.jpg" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={onImageSampleClick}/>
-    <img src="samples/images/matrix.jpeg" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={onImageSampleClick}/>
-    <img src="samples/images/infinity.png" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={onImageSampleClick}/>
+    <img src="samples/images/banana_big.png" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={(e) => {onImageSampleClick(e, "banana.png")}}/>
+    <img src="samples/images/cat.jpg" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={(e) => {onImageSampleClick(e, "cat.jpg")}}/>
+    <img src="samples/images/matrix.jpeg" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={(e) => {onImageSampleClick(e, "matrix.jpeg")}}/>
+    <img src="samples/images/infinity.png" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={(e) => {onImageSampleClick(e, "infinity.png")}}/>
     </div>
   </DialogContent></Dialog>
 
   <Dialog open={fileSampleDialogOpen} onOpenChange={setFileSampleDialogOpen}>
   <DialogContent className="min-w-[90%] max-w-[90%] min-h-[80%] max-h-[80%] bg-neutral-900 border-neutral-800 overflow-auto">
     <div className="flex flex-wrap gap-4 justify-start items-start content-start">
-    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500">
+    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500" onClick={() =>
+      setFileFromUrl("https://raw.githubusercontent.com/Anvarys/image-encrypt/refs/heads/master/public/samples/files/helloworld.txt", "helloworld.txt")
+    }>
       <Label className="text-violet-300 text-[1.1rem]">helloworld.txt<Label className="text-cyan-300 text-[0.8rem]">13 bytes</Label></Label>
       <p>A plain text file with "hello world!" in it</p>
     </div>
-    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500">
+    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500" onClick={() => 
+      setFileFromUrl("https://raw.githubusercontent.com/Anvarys/image-encrypt/refs/heads/master/public/samples/files/banana.png", "banana.png")
+    }>
       <Label className="text-violet-300 text-[1.1rem]">banana.png <Label className="text-cyan-300 text-[0.8rem]">22KB</Label></Label>
       <p>The banana image</p>
     </div>
-    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500">
+    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500" onClick={() =>
+      setFileFromUrl("https://raw.githubusercontent.com/Anvarys/image-encrypt/refs/heads/master/public/samples/files/mysterious-audio.mp3", "mysterious-audio.mp3")
+    }>
       <Label className="text-violet-300 text-[1.1rem]">mysterious-audio.mp3<Label className="text-cyan-300 text-[0.8rem]">132KB</Label></Label>
       <p>Some random audio mp3 file</p>
-    </div>
-    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500">
-      <Label className="text-violet-300 text-[1.1rem]">logo.png<Label className="text-cyan-300 text-[0.8rem]">1KB</Label></Label>
-      <p>Logo of this website</p>
     </div>
     </div>
   </DialogContent></Dialog>
