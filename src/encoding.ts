@@ -22,6 +22,7 @@ export async function encode_file(canvas: HTMLCanvasElement, file: File, color_b
 
   const img_data = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
+  pixel_offset += await encode_bytes(canvas, new Uint8Array([42,52]), color_bits_used, pixel_offset)
   pixel_offset += await encode_bytes(canvas, sizes_bytes, color_bits_used, pixel_offset);
   pixel_offset += await encode_bytes(canvas, string2Uint8Array(file.name), color_bits_used, pixel_offset);
   pixel_offset += await encode_bytes(canvas, string2Uint8Array(file.type), color_bits_used, pixel_offset);
@@ -51,11 +52,12 @@ async function encode_bytes(canvas: HTMLCanvasElement, bytes: Uint8Array, color_
     if (data[pixel * pixel_data_count + 3] === 255) {
       for (let color = 0; color < 3; color++) {
         data[pixel * pixel_data_count + color] = data[pixel * pixel_data_count + color] & color_bits_to_remove;
-
+        console.log(data[pixel * pixel_data_count + color].toString(2).padStart(8, '0'))
         for (let bit = 0; bit < color_bits_used; bit++) {
           data[pixel * pixel_data_count + color] += ( ( bytes[(total_bits+bit) >> 3] >> (7 - (total_bits+bit) & 7) ) & 1 ) << (color_bits_used - bit - 1);
+          console.log(( bytes[(total_bits+bit) >> 3] >> (7 - (total_bits+bit) & 7) ) & 1)
         }
-
+        console.log(data[pixel * pixel_data_count + color].toString(2).padStart(8, '0'))
         total_bits += color_bits_used
       }
     }
@@ -84,11 +86,11 @@ async function decode_part(data: Uint8ClampedArray, byte_count: number, color_bi
     if (data[pixel * pixel_data_count + 3] === 255) {
       for (let color = 0; color < 3; color++) {
         for (let bit = 0; bit < color_bits_used; bit++) {
-          bytes[(total_bits + bit) >> 3] += ( data[pixel * pixel_data_count + color] & (1 << (color_bits_used - bit - 1)) ) << (7 - ((total_bits + bit) & 7))
+          console.log((data[pixel * pixel_data_count + color] & (1 << (color_bits_used - bit - 1))) >> (color_bits_used - bit - 1))
+          bytes[(total_bits + bit) >> 3] += ( data[pixel * pixel_data_count + color] & (1 << (color_bits_used - bit - 1)) ) >> (color_bits_used - bit - 1) << (7 - ((total_bits + bit) & 7))
 
           if (total_bits + bit + 1 >= byte_count * 8) break;
         }
-
         total_bits += color_bits_used
       }
     }
@@ -110,6 +112,14 @@ export async function canvas2file(canvas: HTMLCanvasElement, color_bits_used: nu
   const sizes_size = 6;
 
   let pixel_offset = 0;
+
+  const [validation_part, validation_part_pixel_count] = await decode_part(data, 2, color_bits_used, pixel_offset);
+  pixel_offset += validation_part_pixel_count
+
+  if (validation_part[0] != 42 || validation_part[1] != 52) {
+    toast.error("This image does not contain any encoded data")
+    throw "no data encoded"
+  }
 
   const [sizes, sizes_pixel_count] = await decode_part(data, sizes_size, color_bits_used, pixel_offset);
   pixel_offset += sizes_pixel_count;

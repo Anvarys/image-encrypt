@@ -215,6 +215,8 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
     </div>
     </div>
   </DialogContent></Dialog>
+
+  <Label className="text-transparent bg-clip-text bg-radial from-violet-300 to-violet-600 w-sm mt-3 text-center">Privacy: All the processing is done completely in your browser, nothing gets sent or logged anywhere</Label>
 </div>);
 }
 
