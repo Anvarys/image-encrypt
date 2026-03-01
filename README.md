@@ -2,7 +2,7 @@ This project is a website that encodes data from a file (including filename, fil
 
 #### Summary
 
-To be precise the data is split into groups of 3 bits which are encoded in a single pixel, 1 bit in each RGB color. This way it changes a single bit of the colors which is a 0-0.4% change in color (almost impossible to spot if not looking for it). It increases the image's file size dramatically, because on all the pixels that changed PNG compression will not work that well, and also it is noted that the only file type that you can obtain as the image output is .png because of it's lossless compression which is required for such method to work.
+To be precise the data is encoded into each color of each pixel used in storing data, each pixel contains 3 colors with 8 bit each, you can specify how many bits will be used in the process. So on default 1 bit / color the color is changed It increases the image's file size dramatically, because on all the pixels that changed PNG compression will not work that well, and also it is noted that the only file type that you can obtain as the image output is .png because of it's lossless compression which is required for such method to work (.bmp is also a lossless image file type, but it's not supported yet).
 
 Also any pixels that have opacity lower than 100% will be skipped
 

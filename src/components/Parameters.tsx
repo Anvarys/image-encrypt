@@ -28,7 +28,8 @@ interface ParameterCheckboxParams {
 export type ParametersType = {
   color_bits_used: number,
   spacing: number,
-  reset_before_encoding: boolean
+  reset_before_encoding: boolean,
+  opaque_threshold: number
 }
 
 interface ParametersParams {
@@ -46,7 +47,7 @@ export function Parameters({parametersRef, onChange}: ParametersParams) {
     max={8}
     step={1}
     onChange={onChange}
-    tooltip={<Label className="text-center">How many bits of each<br/>color of each pixel will<br/>be used to encode data</Label>}
+    tooltip={<Label className="text-center leading-relaxed">How many bits of each<br/>color of each pixel will<br/>be used to encode data</Label>}
   />
   <ParameterSlider
     parameter="spacing"
@@ -57,14 +58,25 @@ export function Parameters({parametersRef, onChange}: ParametersParams) {
     step={1}
     value2string={(v) => (v === -1 ? "Auto" : v.toString())}
     onChange={onChange}
-    tooltip={<Label className="text-center">Spacing between pixels that store data. <br/>Auto mode will set this parameter<br/>to the biggest available option</Label>}
+    tooltip={<Label className="text-center leading-relaxed">Spacing between pixels that store data. <br/>Auto mode will set this parameter<br/>to the biggest available option</Label>}
+  />
+  <ParameterSlider
+    parameter="opaque_threshold"
+    parametersRef={parametersRef} 
+    title="Auto-opaque threshold"
+    min={0}
+    max={255}
+    step={1}
+    value2string={(v) => (v/255*100).toFixed(1)+"%"}
+    onChange={onChange}
+    tooltip={<Label className="text-center leading-relaxed">Opacity percentage of a pixel, after which<br/>encoding will set the pixel's opacity to 100%<br/>All pixels with opacity less than<br/>this won't be able to store data</Label>}
   />
   <ParameterCheckbox 
     parameter="reset_before_encoding"
     parametersRef={parametersRef}
     title="Reset image before encoding"
     onChange={onChange}
-    tooltip={<Label className="text-center">Reset image to what it was<br/>without encoded data before<br/>encoding new data</Label>}
+    tooltip={<Label className="text-center leading-relaxed">Reset image to what it was<br/>without encoded data before<br/>encoding new data</Label>}
   />
   </div>)
 }

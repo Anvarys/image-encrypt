@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-export async function encode_file(canvas: HTMLCanvasElement, file: File, color_bits_used: number, spacing: number, pixel_offset: number = 0) {
+export async function encode_file(canvas: HTMLCanvasElement, file: File, color_bits_used: number, spacing: number, opaque_threshold: number, pixel_offset: number = 0) {
   const pixel_count = canvas.width * canvas.height - pixel_offset;
   const ctx = canvas.getContext("2d");
 
@@ -21,27 +21,26 @@ export async function encode_file(canvas: HTMLCanvasElement, file: File, color_b
     spacing++
   }
 
+  const image_capacity = (Math.floor(pixel_count * 3 * color_bits_used / 8) - 10) / spacing
+  const total_size = 2 + 10 + file.name.length + file.type.length + file.size
+
+  if (image_capacity < total_size) {
+    toast.error(`Not enough pixels on the image to encode the file (${((image_capacity/total_size)*100).toFixed(2)}%)`);
+    throw "not enough pixels";
+  }
+
   sizes_bytes_dv.setUint32(6, spacing) // spacing
 
-  const img_data = ctx.getImageData(0, 0, canvas.width, canvas.height)
-
-
-  pixel_offset += await encode_bytes(canvas, new Uint8Array([42,52]), color_bits_used, pixel_offset, 1)
-  pixel_offset += await encode_bytes(canvas, sizes_bytes, color_bits_used, pixel_offset, 1);
-  pixel_offset += await encode_bytes(canvas, string2Uint8Array(file.name), color_bits_used, pixel_offset, spacing);
-  pixel_offset += await encode_bytes(canvas, string2Uint8Array(file.type), color_bits_used, pixel_offset, spacing);
-  pixel_offset += await encode_bytes(canvas, bytes, color_bits_used, pixel_offset, spacing);
-
-  if (pixel_count < pixel_offset) {
-    toast.error(`Not enough pixels on the image to encode the file (${((pixel_count/pixel_offset)*100).toFixed(2)}%)`);
-    ctx.putImageData(img_data, 0, 0);
-    return null;
-  }
+  pixel_offset += await encode_bytes(canvas, new Uint8Array([42,52]), color_bits_used, pixel_offset, 1, opaque_threshold)
+  pixel_offset += await encode_bytes(canvas, sizes_bytes, color_bits_used, pixel_offset, 1, opaque_threshold);
+  pixel_offset += await encode_bytes(canvas, string2Uint8Array(file.name), color_bits_used, pixel_offset, spacing, opaque_threshold);
+  pixel_offset += await encode_bytes(canvas, string2Uint8Array(file.type), color_bits_used, pixel_offset, spacing, opaque_threshold);
+  pixel_offset += await encode_bytes(canvas, bytes, color_bits_used, pixel_offset, spacing, opaque_threshold);
 
   return pixel_offset
 }
 
-async function encode_bytes(canvas: HTMLCanvasElement, bytes: Uint8Array, color_bits_used: number, pixel_offset: number, spacing: number = 1): Promise<number> {
+async function encode_bytes(canvas: HTMLCanvasElement, bytes: Uint8Array, color_bits_used: number, pixel_offset: number, spacing: number, opaque_threshold: number): Promise<number> {
   const ctx = canvas.getContext("2d")!;
   const color_bits_to_remove = 0xff - (1 << color_bits_used) + 1
   const pixel_data_count = 4;
@@ -53,7 +52,7 @@ async function encode_bytes(canvas: HTMLCanvasElement, bytes: Uint8Array, color_
   let total_bits: number = 0;
 
   while (total_bits < bytes.length*8) {
-    if (data[pixel * pixel_data_count + 3] !== 255 && data[data[pixel * pixel_data_count + 3]] > 0) {
+    if (data[pixel * pixel_data_count + 3] !== 255 && data[data[pixel * pixel_data_count + 3]] > opaque_threshold) {
       data[pixel * pixel_data_count + 3] = 255
     }
     if (data[pixel * pixel_data_count + 3] === 255) {

@@ -27,7 +27,8 @@ export function App() {
   const parametersRef = useRef<ParametersType>({
     color_bits_used: 1,
     spacing: -1,
-    reset_before_encoding: true
+    reset_before_encoding: true,
+    opaque_threshold: 200
   })
 
   async function imageFileInputChange() {
@@ -94,7 +95,7 @@ export function App() {
 
     if (parametersRef.current.reset_before_encoding && savedImageBitmap)
     canvasContext.drawImage(savedImageBitmap, 0, 0);
-    const result = await encode_file(canvasRef.current, (file || fileSampleSelected)!, parametersRef.current.color_bits_used, parametersRef.current.spacing)
+    const result = await encode_file(canvasRef.current, (file || fileSampleSelected)!, parametersRef.current.color_bits_used, parametersRef.current.spacing, parametersRef.current.opaque_threshold)
 
     if (!result) {return;}
 
