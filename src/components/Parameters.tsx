@@ -1,7 +1,9 @@
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import InfoIcon from "@/components/info-icon";
 
 interface ParameterSliderParams {
   parameter: keyof ParametersType,
@@ -10,13 +12,17 @@ interface ParameterSliderParams {
   min: number,
   max: number,
   step: number,
-  value2string?: (value: number) => string
+  value2string?: (value: number) => string,
+  onChange: () => void,
+  tooltip: ReactNode
 }
 
 interface ParameterCheckboxParams {
   parameter: keyof ParametersType,
   parametersRef: React.RefObject<ParametersType>,
-  title: string
+  title: string,
+  onChange: () => void,
+  tooltip: ReactNode
 }
 
 export type ParametersType = {
@@ -27,9 +33,10 @@ export type ParametersType = {
 
 interface ParametersParams {
   parametersRef: React.RefObject<ParametersType>
+  onChange: () => void
 }
 
-export function Parameters({parametersRef}: ParametersParams) {
+export function Parameters({parametersRef, onChange}: ParametersParams) {
   return (<div className="flex-col flex gap-4 w-sm">
   <ParameterSlider
     parameter="color_bits_used"
@@ -38,6 +45,8 @@ export function Parameters({parametersRef}: ParametersParams) {
     min={1}
     max={8}
     step={1}
+    onChange={onChange}
+    tooltip={<Label className="text-center">How many bits of each<br/>color of each pixel will<br/>be used to encode data</Label>}
   />
   <ParameterSlider
     parameter="spacing"
@@ -47,11 +56,15 @@ export function Parameters({parametersRef}: ParametersParams) {
     max={100}
     step={1}
     value2string={(v) => (v === -1 ? "Auto" : v.toString())}
+    onChange={onChange}
+    tooltip={<Label className="text-center">Spacing between pixels that store data. <br/>Auto mode will set this parameter<br/>to the biggest available option</Label>}
   />
   <ParameterCheckbox 
     parameter="reset_before_encoding"
     parametersRef={parametersRef}
-    title="Reset image before encoding again"
+    title="Reset image before encoding"
+    onChange={onChange}
+    tooltip={<Label className="text-center">Reset image to what it was<br/>without encoded data before<br/>encoding new data</Label>}
   />
   </div>)
 }
@@ -63,7 +76,9 @@ function ParameterSlider({
   min,
   max,
   step,
-  value2string = (v) => v.toString()
+  value2string = (v) => v.toString(),
+  onChange,
+  tooltip
 }: ParameterSliderParams) {
   if (!(typeof parametersRef.current[parameter] === "number"))
     throw "wrong parameter type"
@@ -72,11 +87,17 @@ function ParameterSlider({
 
   useEffect(() => {
     (parametersRef.current as unknown as Record<typeof parameter, number>)[parameter] = parameterValue
+    onChange()
   }, [parameterValue])
 
   return (<div className="flex w-full flex-col space-y-2">
     <div className="flex flex-row justify-between">
-      <Label className="text-neutral-100 text-[1rem]">{title}</Label>
+      <Label className="text-neutral-100 text-[1rem]">{title}
+        <Tooltip>
+          <TooltipTrigger><InfoIcon/></TooltipTrigger>
+          <TooltipContent>{tooltip}</TooltipContent>
+        </Tooltip>
+      </Label>
       <Label className="text-violet-200 text-[1rem]">{value2string(parameterValue)}</Label>
     </div>
     <Slider
@@ -93,7 +114,9 @@ function ParameterSlider({
 function ParameterCheckbox({
   parameter,
   parametersRef,
-  title
+  title,
+  onChange,
+  tooltip
 }: ParameterCheckboxParams) {
   if (!(typeof parametersRef.current[parameter] === "boolean"))
     throw "wrong parameter type"
@@ -102,10 +125,16 @@ function ParameterCheckbox({
 
   useEffect(() => {
     (parametersRef.current as unknown as Record<typeof parameter, boolean>)[parameter] = parameterValue
+    onChange()
   }, [parameterValue])
 
   return (<div className="flex w-full flex-row justify-between">
-    <Label className="text-neutral-100 text-[1rem]">{title}</Label>
+    <Label className="text-neutral-100 text-[1rem]">{title}
+      <Tooltip>
+        <TooltipTrigger><InfoIcon/></TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+    </Label>
     <Checkbox checked={parameterValue} onCheckedChange={(v: boolean) => {setParameterValue(v)}}/>
   </div>)
 }

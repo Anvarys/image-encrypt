@@ -12,6 +12,7 @@ Also any pixels that have opacity lower than 100% will be skipped
 2. 2nd -> 5th Bytes - A Uint32 specifying the file's content size (let's name this value FCS)
 3. 6th Byte - A Uint8 specifying the filename's size (let's name this value FNS)
 4. 7th Byte - A Uint8 specifying the file type's size (let's name this value FTS)
+5. 8th -> 11th Bytes - A Uint specifying the spacing between pixels containing data
 5. 8th -> {FNS+8} - Filename
 6. {9+FNS} -> {9+FNS+FTS} - File type
 6. {10+FNS+FTS} -> {10+FNS+FTS+FCS} - File's content
