@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { canvas2file, encode_file } from "./encoding";
 import { GithubIcon } from "lucide-react";
 import { Dialog, DialogContent } from "./components/ui/dialog";
+import { Parameters, type ParametersType } from "./components/Parameters";
 
 
 export function App() {
@@ -19,7 +20,13 @@ export function App() {
   const [fileSampleSelected, setFileSampleSelected] = useState<File | null>(null);
   const [imageSampleFilename, setImageSampleFilename] = useState<string | null>(null);
 
-  const color_bits_used = 1
+  const [savedImageBitmap, setSavedImageBitmap] = useState<CanvasImageSource | null>(null);
+
+  const parametersRef = useRef<ParametersType>({
+    color_bits_used: 1,
+    spacing: -1,
+    reset_before_encoding: true
+  })
 
   async function imageFileInputChange() {
     const file = imageFileInputRef.current?.files?.[0]
@@ -32,15 +39,12 @@ export function App() {
       return;
     }
 
-    setCanvas(file)
-  }
-
-  async function setCanvas(blob: Blob) {
-    const bitmap = await createImageBitmap(blob);
+    const bitmap = await createImageBitmap(file);
     canvasRef!.current!.height = bitmap.height
     canvasRef!.current!.width = bitmap.width
     canvasContext!.drawImage(bitmap, 0, 0)
 
+    setSavedImageBitmap(bitmap)
     setIsImageUploaded(true)
   }
 
@@ -52,6 +56,7 @@ export function App() {
     canvasRef.current.height = imgElement.naturalHeight;
     canvasContext.drawImage(imgElement, 0, 0)
 
+    setSavedImageBitmap(imgElement)
     setImagesSampleDialogOpen(false)
     setIsImageUploaded(true)
     setImageSampleFilename(filename)
@@ -83,9 +88,11 @@ export function App() {
       return;
     }
     
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !canvasContext) return;
 
-    const result = await encode_file(canvasRef.current, (file || fileSampleSelected)!, color_bits_used)
+    if (parametersRef.current.reset_before_encoding && savedImageBitmap)
+    canvasContext.drawImage(savedImageBitmap, 0, 0);
+    const result = await encode_file(canvasRef.current, (file || fileSampleSelected)!, parametersRef.current.color_bits_used, parametersRef.current.spacing)
 
     if (!result) {return;}
 
@@ -110,7 +117,7 @@ export function App() {
       return;
     }
 
-    const file = await canvas2file(canvasRef.current!, color_bits_used)
+    const file = await canvas2file(canvasRef.current!, parametersRef.current.color_bits_used)
 
     const url = URL.createObjectURL(file);
     const anchor = document.createElement("a");
@@ -173,12 +180,17 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
     <div className="flex flex-row gap-4 justify-center">
     <Button className="cursor-pointer text-foreground p-6 text-[1.2rem] border-violet-600 bg-violet-500 flex-1" onClick={encodeButtonClicked}>Encode</Button>
     <Button className="cursor-pointer text-foreground p-6 text-[1.2rem] border-green-600 bg-green-500 flex-1" onClick={decodeButtonClicked}>Decode</Button>
-    <a href='https://github.com/Anvarys/image-encrypt' target='_blank'>
-      <div className='bg-neutral-800 p-2 rounded-[0.5rem] border-neutral-700 border flex flex-row w-full h-full items-center'>
+    </div>
+    <div className="flex flex-row gap-4 justify-center">
+    <a href='https://github.com/Anvarys/image-encrypt' className="flex-1/2" target='_blank'>
+      <div className='bg-neutral-800 p-2 rounded-[0.5rem] border-neutral-900 border flex flex-row w-full h-full items-center justify-center'>
         <GithubIcon className="mr-1"/>
-        <Label className='text-center cursor-pointer'>GitHub</Label>
+        <Label className='text-center cursor-pointer text-[1rem]'>GitHub</Label>
       </div>
     </a>
+    {window.innerWidth < 1024 &&
+    <Button className="cursor-pointer text-foreground p-6 text-[1.2rem] border-cyan-800 bg-cyan-700 flex-1/2" onClick={encodeButtonClicked}>Parameters</Button>
+    }
     </div>
   </div>
 
@@ -189,6 +201,7 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
     <img src="samples/images/cat.jpg" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={(e) => {onImageSampleClick(e, "cat.jpg")}}/>
     <img src="samples/images/matrix.jpeg" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={(e) => {onImageSampleClick(e, "matrix.jpeg")}}/>
     <img src="samples/images/infinity.png" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={(e) => {onImageSampleClick(e, "infinity.png")}}/>
+    <img src="samples/images/blank640.png" className="w-full max-w-[384px] h-auto object-contain border-2 rounded-sm border-neutral-900 hover:border-cyan-500 cursor-pointer" onClick={(e) => {onImageSampleClick(e, "blank640.png")}}/>
     </div>
   </DialogContent></Dialog>
 
@@ -215,8 +228,17 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
     </div>
     </div>
   </DialogContent></Dialog>
-
+  
   <Label className="text-transparent bg-clip-text bg-radial from-violet-300 to-violet-600 w-sm mt-3 text-center">Privacy: All the processing is done completely in your browser, nothing gets sent or logged anywhere</Label>
+
+  {window.innerWidth >= 1024 && 
+    <div className="absolute top-4 left-4">
+    <Label className="text-xl mb-5 text-cyan-200">Parameters:</Label>
+    <Parameters 
+      parametersRef={parametersRef} 
+    />
+    </div>
+  }
 </div>);
 }
 
