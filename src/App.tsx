@@ -122,7 +122,7 @@ export function App() {
       return;
     }
 
-    const file = await canvas2file(canvasRef.current!, parametersRef.current.color_bits_used)
+    const file = await canvas2file(canvasRef.current!)
 
     const url = URL.createObjectURL(file);
     const anchor = document.createElement("a");
