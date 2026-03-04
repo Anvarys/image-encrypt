@@ -1,5 +1,8 @@
 import { toast } from "sonner";
 
+const default_spacing = 1
+const default_color_bits_used = 1;
+
 export async function encode_file(canvas: HTMLCanvasElement, file: File, color_bits_used: number, spacing: number, opaque_threshold: number, pixel_offset: number = 0) {
   const ctx = canvas.getContext("2d");
 
@@ -20,14 +23,14 @@ export async function encode_file(canvas: HTMLCanvasElement, file: File, color_b
   const pixel_count = getPixelsFromAlpha(data, opaque_threshold) - pixel_offset;
 
   if (spacing === -1) {
-    spacing = Math.floor((pixel_count - estimatePixelCount(2, color_bits_used) - estimatePixelCount(sizes_bytes.length, color_bits_used)) / (estimatePixelCount(file.name.length,color_bits_used) + estimatePixelCount(file.type.length, color_bits_used) + estimatePixelCount(bytes.length, color_bits_used)))   
+    spacing = Math.floor((pixel_count - estimatePixelCount(1, default_color_bits_used) - estimatePixelCount(2, color_bits_used) - estimatePixelCount(sizes_bytes.length, color_bits_used)) / (estimatePixelCount(file.name.length,color_bits_used) + estimatePixelCount(file.type.length, color_bits_used) + estimatePixelCount(bytes.length, color_bits_used)))   
   } else {
     spacing++
   }
 
   console.log(spacing)
 
-  const image_capacity = (Math.floor(pixel_count * 3 * color_bits_used / 8) - 10) / spacing
+  const image_capacity = Math.floor(pixel_count * 3 * color_bits_used / 8) / spacing
   const total_size = 2 + 10 + file.name.length + file.type.length + file.size
 
   if (image_capacity < total_size) {
@@ -37,8 +40,9 @@ export async function encode_file(canvas: HTMLCanvasElement, file: File, color_b
 
   sizes_bytes_dv.setUint32(6, spacing) // spacing
 
-  pixel_offset += await encode_bytes(canvas, new Uint8Array([42,52]), color_bits_used, pixel_offset, 1, opaque_threshold)
-  pixel_offset += await encode_bytes(canvas, sizes_bytes, color_bits_used, pixel_offset, 1, opaque_threshold);
+  pixel_offset += await encode_bytes(canvas, new Uint8Array([color_bits_used]), default_color_bits_used, pixel_offset, default_spacing, opaque_threshold)
+  pixel_offset += await encode_bytes(canvas, new Uint8Array([42,52]), color_bits_used, pixel_offset, default_spacing, opaque_threshold)
+  pixel_offset += await encode_bytes(canvas, sizes_bytes, color_bits_used, pixel_offset, default_spacing, opaque_threshold);
   pixel_offset += await encode_bytes(canvas, string2Uint8Array(file.name), color_bits_used, pixel_offset, spacing, opaque_threshold);
   pixel_offset += await encode_bytes(canvas, string2Uint8Array(file.type), color_bits_used, pixel_offset, spacing, opaque_threshold);
   pixel_offset += await encode_bytes(canvas, bytes, color_bits_used, pixel_offset, spacing, opaque_threshold);
@@ -118,12 +122,15 @@ async function decode_part(data: Uint8ClampedArray, byte_count: number, color_bi
   return [bytes, pixel];
 }
 
-export async function canvas2file(canvas: HTMLCanvasElement, color_bits_used: number): Promise<File> {
+export async function canvas2file(canvas: HTMLCanvasElement): Promise<File> {
   const data = canvas.getContext("2d")?.getImageData(0, 0, canvas.width, canvas.height).data!;
 
   const sizes_size = 10;
 
   let pixel_offset = 0;
+
+  const [[color_bits_used], color_bits_used_pixel_count] = await decode_part(data, 1, default_color_bits_used, pixel_offset);
+  pixel_offset += color_bits_used_pixel_count
 
   const [validation_part, validation_part_pixel_count] = await decode_part(data, 2, color_bits_used, pixel_offset);
   pixel_offset += validation_part_pixel_count
