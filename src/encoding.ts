@@ -1,7 +1,6 @@
 import { toast } from "sonner";
 
 export async function encode_file(canvas: HTMLCanvasElement, file: File, color_bits_used: number, spacing: number, opaque_threshold: number, pixel_offset: number = 0) {
-  const pixel_count = canvas.width * canvas.height - pixel_offset;
   const ctx = canvas.getContext("2d");
 
   if (!ctx) return null;
@@ -11,15 +10,22 @@ export async function encode_file(canvas: HTMLCanvasElement, file: File, color_b
   const sizes_bytes = new Uint8Array(10);
   const sizes_bytes_dv = new DataView(sizes_bytes.buffer);
 
-  sizes_bytes_dv.setUint32(0, file.size);
+  sizes_bytes_dv.setUint32(0, file.size); 
   sizes_bytes_dv.setUint8(4, file.name.length);
   sizes_bytes_dv.setUint8(5, file.type.length);
 
+  const img_data = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const data: Uint8ClampedArray = img_data.data
+
+  const pixel_count = getPixelsFromAlpha(data, opaque_threshold) - pixel_offset;
+
   if (spacing === -1) {
-    spacing = Math.floor((pixel_count - estimatePixelCount(2, color_bits_used) - estimatePixelCount(10, color_bits_used)) / (estimatePixelCount(file.name.length,color_bits_used) + estimatePixelCount(file.type.length, color_bits_used) + estimatePixelCount(bytes.length, color_bits_used)))
+    spacing = Math.floor((pixel_count - estimatePixelCount(2, color_bits_used) - estimatePixelCount(sizes_bytes.length, color_bits_used)) / (estimatePixelCount(file.name.length,color_bits_used) + estimatePixelCount(file.type.length, color_bits_used) + estimatePixelCount(bytes.length, color_bits_used)))   
   } else {
     spacing++
   }
+
+  console.log(spacing)
 
   const image_capacity = (Math.floor(pixel_count * 3 * color_bits_used / 8) - 10) / spacing
   const total_size = 2 + 10 + file.name.length + file.type.length + file.size
@@ -71,6 +77,7 @@ async function encode_bytes(canvas: HTMLCanvasElement, bytes: Uint8Array, color_
     pixel += spacing;
 
     if (pixel > total_pixel_count) {
+      throw "not enough pixels, encoding"
       return pixel;
     }
   }
@@ -104,7 +111,7 @@ async function decode_part(data: Uint8ClampedArray, byte_count: number, color_bi
 
     if (pixel > total_pixel_count) {
       toast.error("An error occured during decoding")
-      throw "not enough pixels"
+      throw "not enough" 
     }
   }
 
@@ -134,6 +141,7 @@ export async function canvas2file(canvas: HTMLCanvasElement, color_bits_used: nu
   const file_name_size = sizes_dv.getUint8(4);
   const file_type_size = sizes_dv.getUint8(5);
   const spacing = sizes_dv.getUint32(6);
+  console.log(spacing)
 
   const [file_name_bytes, file_name_pixel_count] = await decode_part(data, file_name_size, color_bits_used, pixel_offset, spacing);
   pixel_offset += file_name_pixel_count;
@@ -162,5 +170,15 @@ function string2Uint8Array(str: string): Uint8Array {
 
 
 function estimatePixelCount(bytes: number, color_bits_used: number): number {
-  return Math.floor( (bytes * 8) / (color_bits_used * 3) )
+  return Math.ceil( (bytes * 8) / (color_bits_used * 3) )
+}
+
+export function getPixelsFromAlpha(data: Uint8ClampedArray, alpha: number) {
+  let count = 0
+  for (let i = 0; i < (data.length >> 2); i++) {
+    if (data[(i<<2)+3] >= alpha) {
+      count++;
+    }
+  }
+  return count
 }

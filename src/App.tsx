@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { canvas2file, encode_file } from "./encoding";
+import { canvas2file, encode_file, getPixelsFromAlpha } from "./encoding";
 import { GithubIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Parameters, type ParametersType } from "@/components/Parameters";
@@ -93,8 +93,10 @@ export function App() {
     
     if (!canvasRef.current || !canvasContext) return;
 
-    if (parametersRef.current.reset_before_encoding && savedImageBitmap)
-    canvasContext.drawImage(savedImageBitmap, 0, 0);
+    if (parametersRef.current.reset_before_encoding && savedImageBitmap) {
+      canvasContext.fillRect(0,0,canvasRef.current.width,canvasRef.current.height)
+      canvasContext.drawImage(savedImageBitmap, 0, 0);
+    }
     const result = await encode_file(canvasRef.current, (file || fileSampleSelected)!, parametersRef.current.color_bits_used, parametersRef.current.spacing, parametersRef.current.opaque_threshold)
 
     if (!result) {return;}
@@ -151,19 +153,22 @@ export function App() {
   }
 
   function getImageCapacity() {
-    if (!canvasRef.current || !isImageUploaded)
+    if (!canvasRef.current || !isImageUploaded || !canvasContext)
     return null
 
-    const pixels = canvasRef.current.height * canvasRef.current.width 
+    const img_data = canvasContext.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)
+    const data: Uint8ClampedArray = img_data.data
+
+    const pixels = getPixelsFromAlpha(data, parametersRef.current.opaque_threshold)
     const byte_count = Math.floor(pixels * 3 * parametersRef.current.color_bits_used / 8) - 10
     return byte_count / (parametersRef.current.spacing === -1 ? 1 : (parametersRef.current.spacing+1))
   }
 
   function getByteCountString(byte_count: number): string {
-    if (byte_count < 0) {
+    if (byte_count < 0) { 
       return "<0 bytes"
     } else if (byte_count < 1000) {
-      return byte_count + " bytes"
+      return byte_count.toFixed(0) + " bytes"
     } else if (byte_count < 1_000_000) {
       return (byte_count / 1000).toFixed(1)+" KB"
     } else {
