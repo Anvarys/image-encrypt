@@ -25,10 +25,10 @@ export function App() {
   const [savedImageBitmap, setSavedImageBitmap] = useState<CanvasImageSource | null>(null);
 
   const parametersRef = useRef<ParametersType>({
-    color_bits_used: 1,
-    spacing: -1,
-    reset_before_encoding: true,
-    opaque_threshold: 200
+    color_bits_used: Number(localStorage.getItem("color_bits_used") ?? 1),
+    spacing: Number(localStorage.getItem("spacing") ?? -1),
+    reset_before_encoding: Boolean(Number(localStorage.getItem("reset_before_encoding") ?? true)),
+    opaque_threshold: Number(localStorage.getItem("opaque_threshold") ?? 200)
   })
 
   async function imageFileInputChange() {
@@ -182,6 +182,15 @@ export function App() {
     return file.size + file.name.length + file.type.length
   }
 
+  function onParamChange() {
+    forceUpdate(v => v+1);
+
+    localStorage.setItem("color_bits_used", parametersRef.current.color_bits_used.toString())
+    localStorage.setItem("opaque_threshold", parametersRef.current.opaque_threshold.toString())
+    localStorage.setItem("reset_before_encoding", Number(parametersRef.current.reset_before_encoding).toString())
+    localStorage.setItem("spacing", parametersRef.current.spacing.toString())
+  }
+
   useEffect(() => {
     setCanvasContext(canvasRef.current?.getContext("2d")!)
   }, [])
@@ -269,7 +278,7 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
     <Label className="text-xl mb-5 text-cyan-200">Parameters:</Label>
     <Parameters 
       parametersRef={parametersRef} 
-      onChange={() => forceUpdate(v => v+1)}
+      onChange={onParamChange}
     />
     { ((filename && fileInputRef.current && fileInputRef.current.files) || (canvasRef.current && isImageUploaded) )&&
     <Label className="text-xl mb-5 mt-5 text-cyan-200">Additional info:</Label> }
