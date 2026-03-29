@@ -208,7 +208,7 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
     </div>
   </Button>
   
-  <canvas ref={canvasRef} className="max-w-sm max-h-sm h-sm border border-4" hidden={!isImageUploaded}></canvas>
+  <canvas ref={canvasRef} className="max-w-sm max-h-sm h-sm border-4" hidden={!isImageUploaded}></canvas>
   {filename && <Label>File: {filename}</Label>}
 
   <div className="flex flex-col gap-4 w-sm w-max-sm">
@@ -218,7 +218,7 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
     </div>
     <div className="flex flex-row gap-4 justify-center">
     <a href='https://github.com/Anvarys/image-encrypt' className="flex-1/2" target='_blank'>
-      <div className='bg-neutral-800 p-2 rounded-[0.5rem] border-neutral-900 border flex flex-row w-full h-full items-center justify-center'>
+      <div className='bg-neutral-800 p-2 rounded-xl border-neutral-900 border flex flex-row w-full h-full items-center justify-center'>
         <GithubIcon className="mr-1"/>
         <Label className='text-center cursor-pointer text-[1rem]'>GitHub</Label>
       </div>
@@ -242,19 +242,19 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
   <DialogContent className="min-w-[90%] max-w-[90%] min-h-[80%] max-h-[80%] bg-neutral-900 border-neutral-800 overflow-auto">
     <DialogTitle hidden>File sample</DialogTitle>
     <div className="flex flex-wrap gap-4 justify-start items-start content-start">
-    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500" onClick={() =>
+    <div className="border-2 w-[92.5%] flex flex-col items-center bg-neutral-800 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500" onClick={() =>
       setFileFromUrl("https://raw.githubusercontent.com/Anvarys/image-encrypt/refs/heads/master/public/samples/files/helloworld.txt", "helloworld.txt")
     }>
       <Label className="text-violet-300 text-[1.1rem]">helloworld.txt<Label className="text-cyan-300 text-[0.8rem]">52 bytes</Label></Label>
       <p>A plain text file with "hello world!" in it</p>
     </div>
-    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500" onClick={() => 
+    <div className="w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500" onClick={() => 
       setFileFromUrl("https://raw.githubusercontent.com/Anvarys/image-encrypt/refs/heads/master/public/samples/files/banana.png", "banana.png")
     }>
       <Label className="text-violet-300 text-[1.1rem]">banana.png <Label className="text-cyan-300 text-[0.8rem]">22KB</Label></Label>
       <p>The banana image</p>
     </div>
-    <div className="border w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500" onClick={() =>
+    <div className="w-[92.5%] flex flex-col items-center bg-neutral-800 border-2 border-neutral-700 rounded-sm p-2 cursor-pointer hover:border-blue-500" onClick={() =>
       setFileFromUrl("https://raw.githubusercontent.com/Anvarys/image-encrypt/refs/heads/master/public/samples/files/mysterious-audio.mp3", "mysterious-audio.mp3")
     }>
       <Label className="text-violet-300 text-[1.1rem]">mysterious-audio.mp3<Label className="text-cyan-300 text-[0.8rem]">132KB</Label></Label>
@@ -263,7 +263,7 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
     </div>
   </DialogContent></Dialog>
   
-  <Label className="text-transparent bg-clip-text bg-radial from-violet-300 to-violet-600 w-sm mt-3 text-center">Privacy: All the processing is done completely in your browser, nothing gets sent or logged anywhere</Label>
+  <Label className="text-transparent bg-clip-text bg-radial from-violet-300 to-violet-600 w-sm mt-3 text-center">All the processing is done completely in your browser, nothing gets sent or logged anywhere</Label>
 
   <div className="lg:absolute lg:top-4 lg:left-4">
     <Label className="text-xl mb-5 text-cyan-200">Parameters:</Label>
@@ -299,10 +299,10 @@ return (<div className="text-foreground flex flex-col items-center p-4 gap-4">
       }
       { filename && fileInputRef.current && fileInputRef.current.files &&
       <div className="flex flex-row justify-between">
-        <Label className="text-neutral-100 text-[1rem]">Total file size
+        <Label className="text-neutral-100 text-[1rem]">File size
           <Tooltip>
             <TooltipTrigger><InfoIcon/></TooltipTrigger>
-            <TooltipContent><Label className="text-center">Total file size including<br/>the filename and the<br/>file type</Label></TooltipContent>
+            <TooltipContent><Label className="text-center">File size including<br/>the filename and the<br/>file type</Label></TooltipContent>
           </Tooltip>
         </Label>
         <Label className={`text-[1rem]`} style={{color: `${getImageCapacity() ? (getTotalFileSize()! <= getImageCapacity()! ? "oklch(87.1% 0.15 154.449)" : "oklch(63.7% 0.237 25.331)") : "oklch(89.4% 0.057 293.283)"}`}}>{getByteCountString(getTotalFileSize()!)}</Label>
